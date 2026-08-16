@@ -1,0 +1,9 @@
+{
+  "name": "tim-cederroth-cv",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/generate.mjs",
+    "watch": "node --watch-preserve-output --watch-path=cv.content.json scripts/generate.mjs"
+  }
+}

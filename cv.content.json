@@ -1,0 +1,254 @@
+{
+  "person": {
+    "name": "Tim Cederroth",
+    "headline": {
+      "en": "IT Support • Networking • Systems Administration",
+      "sv": "IT-support • Nätverk • Systemadministration"
+    },
+    "contact": [
+      {
+        "label": {
+          "en": "Email",
+          "sv": "E-post"
+        },
+        "value": "tim.cederroth@gmail.com",
+        "href": "mailto:tim.cederroth@gmail.com"
+      },
+      {
+        "label": {
+          "en": "Phone",
+          "sv": "Telefon"
+        },
+        "value": "073-667 72 91",
+        "href": "tel:+46736677291"
+      },
+      {
+        "label": {
+          "en": "Location",
+          "sv": "Ort"
+        },
+        "value": "Stockholm"
+      },
+      {
+        "label": "GitHub",
+        "value": "TimKankse",
+        "href": "https://github.com/TimKankse"
+      }
+    ]
+  },
+  "profile": {
+    "heading": {
+      "en": "Personal Summary",
+      "sv": "Personlig profil"
+    },
+    "paragraphs": [
+      {
+        "en": "Entry-level IT professional with practical experience in IT through troubleshooting and setting up hardware, software, networks and printers, as well as web development and deployment. Comfortable working with Linux, Windows and macOS, various networking protocols and Docker. Looking for an entry-level position within IT to continue pursuing a career in networking and systems administration.",
+        "sv": " IT-specialist med praktisk erfarenhet av felsökning samt installation och konfigurering av hårdvara, programvara, nätverk och skrivare, liksom webbutveckling och driftsättning. Van att arbeta med Linux, Windows och macOS, olika nätverksprotokoll samt Docker. Söker en ingångsroll inom IT för att fortsätta utvecklas mot en karriär inom nätverk och systemadministration."
+      }
+    ]
+  },
+  "experience": {
+    "heading": {
+      "en": "Experience",
+      "sv": "Arbetslivserfarenhet"
+    },
+    "items": [
+      {
+        "title": {
+          "en": "Technical support for family business",
+          "sv": "Teknisk support för familjeföretag"
+        },
+        "organization": "BBK International AB",
+        "meta": {
+          "en": "Project-based / Family business, 2023–2026",
+          "sv": "Projektbaserat / Familjeföretag, 2023–2026"
+        },
+        "bullets": [
+          {
+            "en": "Sole developer responsible for building the company website with JavaScript and Next.js and migrating it to a modern hosting environment.",
+            "sv": "Ensam utvecklare med ansvar för att bygga företagets webbplats med JavaScript och Next.js samt migrera den till en modern driftmiljö."
+          },
+          {
+            "en": "Selected, purchased, installed, configured and maintained computer and office hardware and software according to business needs.",
+            "sv": "Valde, köpte in, installerade, konfigurerade och underhöll dator- och kontorsutrustning samt programvara utifrån verksamhetens behov."
+          },
+          {
+            "en": "Diagnosed and resolved hardware, software, printer and network connectivity issues.",
+            "sv": "Diagnostiserade och löste problem med hårdvara, programvara, skrivare och nätverksanslutningar."
+          }
+        ]
+      },
+      {
+        "title": {
+          "en": "Student assistant",
+          "sv": "Elevassistent"
+        },
+        "organization": "Trädgårdsstadsskolan – Botkyrka kommun",
+        "meta": "2021–2022",
+        "bullets": [
+          {
+            "en": "Supported the classroom teacher with lessons, activities and supervision for a third-grade class.",
+            "sv": "Stöttade klassläraren med lektioner, aktiviteter och tillsyn för en klass i årskurs 3."
+          },
+          {
+            "en": "Supervised and supported students during after-school activities.",
+            "sv": "Ansvarade för tillsyn och stöttade elever under fritidsverksamhet."
+          }
+        ]
+      }
+    ]
+  },
+  "education": {
+    "heading": {
+      "en": "Education",
+      "sv": "Utbildning"
+    },
+    "items": [
+      {
+        "title": {
+          "en": "Introduction to Networking",
+          "sv": "Introduktion till nätverk"
+        },
+        "organization": "KTH Flemingsberg",
+        "meta": {
+          "en": "Cisco Networking Academy / CCNA curriculum, 2023",
+          "sv": "Cisco Networking Academy / CCNA-kursplan, 2023"
+        },
+        "paragraphs": [
+          {
+            "en": "TCP/IP, IPv4/IPv6, subnetting, switching, routing, VLANs, network troubleshooting and Cisco lab work.",
+            "sv": "TCP/IP, IPv4/IPv6, subnät, switching, routing, VLAN, nätverksfelsökning och laborationer med Cisco-utrustning."
+          }
+        ]
+      },
+      {
+        "title": {
+          "en": "Introduction to Programming",
+          "sv": "Introduktion till programmering"
+        },
+        "organization": "KTH Flemingsberg",
+        "meta": {
+          "en": "Programming course in C, 2023",
+          "sv": "Programmeringskurs i C, 2023"
+        }
+      },
+      {
+        "title": {
+          "en": "Technology - Product Development & Design",
+          "sv": "Teknik - Produktutveckling och design"
+        },
+        "organization": "LBS Kreativa Gymnasiet Södra",
+        "meta": {
+          "en": "Game design & development, 2017–2020",
+          "sv": "Speldesign och spelutveckling, 2017–2020"
+        }
+      }
+    ]
+  },
+  "projects": {
+    "heading": {
+      "en": "Technical Projects",
+      "sv": "Tekniska projekt"
+    },
+    "items": [
+      {
+        "title": {
+          "en": "Home Lab",
+          "sv": "Home Lab"
+        },
+        "paragraphs": [
+          {
+            "en": "Operate and maintain an Ubuntu Server environment hosting containerised applications using Docker and Docker Compose.",
+            "sv": "Driver och underhåller en Ubuntu Server-miljö som kör containeriserade applikationer med hjälp av Docker och Docker Compose."
+          },
+          {
+            "en": "Configure DNS, reverse proxying, HTTPS, VPN/remote access, storage and network services.",
+            "sv": "Konfigurerar DNS, reverse proxy, HTTPS, VPN/fjärråtkomst, lagring och nätverkstjänster."
+          },
+          {
+            "en": "Monitor system health and troubleshoot networking, DNS, storage and application issues.",
+            "sv": "Övervakar systemets status och felsöker problem med nätverk, DNS, lagring och applikationer."
+          }
+        ]
+      },
+      {
+        "title": {
+          "en": "Linux Desktop Environment Customisation and Automation",
+          "sv": "Anpassning och automatisering av Linux-skrivbordsmiljö"
+        },
+        "paragraphs": [
+          {
+            "en": "Built and customised an Arch Linux/Hyprland desktop environment using shell scripting, AGS/GTK, JavaScript and automation tools.",
+            "sv": "Bygger och anpassaar en Arch Linux/Hyprland baserad skrivbordsmiljö med hjälp av skalskript, AGS/GTK, JavaScript och automatiseringsverktyg."
+          }
+        ]
+      },
+      {
+        "title": {
+          "en": "Custom Dashboard for Self-hosted Services",
+          "sv": "Anpassad kontrollpanel för egenhostade tjänster"
+        },
+        "paragraphs": [
+          {
+            "en": "Developed a web dashboard for managing and accessing self-hosted services using Next.js/TypeScript, SQL and a production authentication flow.",
+            "sv": "Utvecklade en webb baserad kontrolpanel för att hantera och nå egenhostade tjänster med Next.js/TypeScript, SQL och ett produktionsanpassat autentiseringsflöde."
+          }
+        ]
+      }
+    ]
+  },
+  "skills": {
+    "heading": {
+      "en": "Technical Skills",
+      "sv": "Tekniska färdigheter"
+    },
+    "items": [
+      {
+        "label": {
+          "en": "Operating Systems",
+          "sv": "Operativsystem"
+        },
+        "value": "Linux, Windows, macOS"
+      },
+      {
+        "label": {
+          "en": "Networking",
+          "sv": "Nätverk"
+        },
+        "value": "TCP/IP, DNS, DHCP, subnetting, VPN"
+      },
+      {
+        "label": {
+          "en": "Infrastructure",
+          "sv": "Infrastruktur"
+        },
+        "value": "Docker, Docker Compose, Nginx, Tailscale, Cloudflare"
+      },
+      {
+        "label": {
+          "en": "Development",
+          "sv": "Utveckling"
+        },
+        "value": "JavaScript, Next.js, SQL, Node.js, Python, C"
+      },
+      {
+        "label": {
+          "en": "Tools",
+          "sv": "Verktyg"
+        },
+        "value": "Git, GitHub, SSH"
+      },
+      {
+        "label": {
+          "en": "Languages",
+          "sv": "Språk"
+        },
+        "value": {
+          "en": "Swedish, English",
+          "sv": "Svenska, engelska"
+        }
+      }
+    ]
+  }
+}
