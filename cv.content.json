@@ -61,8 +61,8 @@
         },
         "organization": "BBK International AB",
         "meta": {
-          "en": "Project-based / Family business, 2023–2026",
-          "sv": "Projektbaserat / Familjeföretag, 2023–2026"
+          "en": "Project-based / Family business, 2023-2026",
+          "sv": "Projektbaserat / Familjeföretag, 2023-2026"
         },
         "bullets": [
           {
@@ -84,8 +84,8 @@
           "en": "Student assistant",
           "sv": "Elevassistent"
         },
-        "organization": "Trädgårdsstadsskolan – Botkyrka kommun",
-        "meta": "2021–2022",
+        "organization": "Trädgårdsstadsskolan - Botkyrka kommun",
+        "meta": "2021-2022",
         "bullets": [
           {
             "en": "Supported the classroom teacher with lessons, activities and supervision for a third-grade class.",
@@ -140,8 +140,8 @@
         },
         "organization": "LBS Kreativa Gymnasiet Södra",
         "meta": {
-          "en": "Game design & development, 2017–2020",
-          "sv": "Speldesign och spelutveckling, 2017–2020"
+          "en": "Game design & development, 2017-2020",
+          "sv": "Speldesign och spelutveckling, 2017-2020"
         }
       }
     ]
@@ -187,12 +187,12 @@
       {
         "title": {
           "en": "Custom Dashboard for Self-hosted Services",
-          "sv": "Anpassad kontrollpanel för egenhostade tjänster"
+          "sv": "Webbaserad kontrollpanel för egenhostade tjänster"
         },
         "paragraphs": [
           {
             "en": "Developed a web dashboard for managing and accessing self-hosted services using Next.js/TypeScript, SQL and a production authentication flow.",
-            "sv": "Utvecklade en webb baserad kontrolpanel för att hantera och nå egenhostade tjänster med Next.js/TypeScript, SQL och ett produktionsanpassat autentiseringsflöde."
+            "sv": "Utvecklade en webbaserad kontrolpanel för att hantera och nå egenhostade tjänster med Next.js/TypeScript, SQL och ett produktionsanpassat autentiseringsflöde."
           }
         ]
       }
