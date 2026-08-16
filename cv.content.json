@@ -48,38 +48,46 @@
       }
     ]
   },
-  "experience": {
+  "relevantExperience": {
     "heading": {
-      "en": "Experience",
-      "sv": "Arbetslivserfarenhet"
+      "en": "Relevant Experience",
+      "sv": "Relevant erfarenhet"
     },
     "items": [
       {
         "title": {
-          "en": "Technical support for family business",
-          "sv": "Teknisk support för familjeföretag"
+          "en": "IT & Web Support for Family Business",
+          "sv": "IT och webbstöd för familjeföretag"
         },
         "organization": "BBK International AB",
         "years": "2023-2026",
         "meta": {
-          "en": "Project-based / Family business",
-          "sv": "Projektbaserat / Familjeföretag"
+          "en": "Informal, ongoing support · Paid project: company website",
+          "sv": "Informellt, löpande stöd · Betalt uppdrag: företagets webbplats"
         },
         "bullets": [
           {
-            "en": "Sole developer responsible for building the company website (bebeco.com) with JavaScript and Next.js and migrating it to a modern hosting environment.",
-            "sv": "Ensam utvecklare med ansvar för att bygga företagets webbplats (bebeco.com) med JavaScript och Next.js samt migrera den till en modern driftmiljö."
+            "en": "Paid project: sole developer for the company website (bebeco.com), built with JavaScript and Next.js and migrated to a modern hosting environment.",
+            "sv": "Betalt uppdrag: ensam utvecklare av företagets webbplats (bebeco.com), byggd med JavaScript och Next.js och migrerad till en modern driftmiljö."
           },
           {
-            "en": "Selected, purchased, installed, configured and maintained computer and office hardware and software according to business needs.",
-            "sv": "Valde, köpte in, installerade, konfigurerade och underhöll dator- och kontorsutrustning samt programvara utifrån verksamhetens behov."
+            "en": "Ongoing informal support: selected, purchased, installed, configured and maintained computer and office hardware and software according to business needs.",
+            "sv": "Löpande informellt stöd: valde, köpte in, installerade, konfigurerade och underhöll dator och kontorsutrustning samt programvara utifrån verksamhetens behov."
           },
           {
-            "en": "Diagnosed and resolved hardware, software, printer and network connectivity issues.",
-            "sv": "Diagnostiserade och löste problem med hårdvara, programvara, skrivare och nätverksanslutningar."
+            "en": "Diagnosed and resolved hardware, software, printer and network connectivity issues as needed.",
+            "sv": "Diagnostiserade och löste problem med hårdvara, programvara, skrivare och nätverksanslutningar vid behov."
           }
         ]
-      },
+      }
+    ]
+  },
+  "experience": {
+    "heading": {
+      "en": "Employment History",
+      "sv": "Arbetslivserfarenhet"
+    },
+    "items": [
       {
         "title": {
           "en": "Student assistant",

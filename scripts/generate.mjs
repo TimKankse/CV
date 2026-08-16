@@ -136,6 +136,7 @@ ${renderContact(content.person.contact, language)}
         </div>
       </header>
 ${renderSection("profile", language)}
+${renderSection("relevantExperience", language)}
 ${renderSection("experience", language)}
 ${renderSection("education", language)}
 ${renderSection("projects", language)}
