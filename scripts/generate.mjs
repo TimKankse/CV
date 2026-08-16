@@ -61,6 +61,9 @@ function renderItems(items, language, field) {
       const organization = item.organization
         ? ` <span aria-hidden="true">|</span> ${text(item.organization, language, `${itemField}.organization`)}`
         : "";
+      const years = item.years
+        ? `\n            <p class="years">${text(item.years, language, `${itemField}.years`)}</p>`
+        : "";
       const meta = item.meta
         ? `\n          <p class="meta">${text(item.meta, language, `${itemField}.meta`)}</p>`
         : "";
@@ -77,7 +80,9 @@ function renderItems(items, language, field) {
         : "";
 
       return `        <article>
-          <h3>${text(item.title, language, `${itemField}.title`)}${organization}</h3>${meta}${paragraphs}${bullets}
+          <div class="article-header">
+            <h3>${text(item.title, language, `${itemField}.title`)}${organization}</h3>${years}
+          </div>${meta}${paragraphs}${bullets}
         </article>`;
     })
     .join("\n");

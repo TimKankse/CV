@@ -39,7 +39,7 @@
   "profile": {
     "heading": {
       "en": "Personal Summary",
-      "sv": "Personlig profil"
+      "sv": "Personlig Sammanfattning"
     },
     "paragraphs": [
       {
@@ -60,14 +60,15 @@
           "sv": "Teknisk support för familjeföretag"
         },
         "organization": "BBK International AB",
+        "years": "2023-2026",
         "meta": {
-          "en": "Project-based / Family business, 2023-2026",
-          "sv": "Projektbaserat / Familjeföretag, 2023-2026"
+          "en": "Project-based / Family business",
+          "sv": "Projektbaserat / Familjeföretag"
         },
         "bullets": [
           {
-            "en": "Sole developer responsible for building the company website with JavaScript and Next.js and migrating it to a modern hosting environment.",
-            "sv": "Ensam utvecklare med ansvar för att bygga företagets webbplats med JavaScript och Next.js samt migrera den till en modern driftmiljö."
+            "en": "Sole developer responsible for building the company website (bebeco.com) with JavaScript and Next.js and migrating it to a modern hosting environment.",
+            "sv": "Ensam utvecklare med ansvar för att bygga företagets webbplats (bebeco.com) med JavaScript och Next.js samt migrera den till en modern driftmiljö."
           },
           {
             "en": "Selected, purchased, installed, configured and maintained computer and office hardware and software according to business needs.",
@@ -85,7 +86,7 @@
           "sv": "Elevassistent"
         },
         "organization": "Trädgårdsstadsskolan - Botkyrka kommun",
-        "meta": "2021-2022",
+        "years": "2021-2022",
         "bullets": [
           {
             "en": "Supported the classroom teacher with lessons, activities and supervision for a third-grade class.",
@@ -111,9 +112,10 @@
           "sv": "Introduktion till nätverk"
         },
         "organization": "KTH Flemingsberg",
+        "years": "2023",
         "meta": {
-          "en": "Cisco Networking Academy / CCNA curriculum, 2023",
-          "sv": "Cisco Networking Academy / CCNA-kursplan, 2023"
+          "en": "Cisco Networking Academy / CCNA curriculum",
+          "sv": "Cisco Networking Academy / CCNA-kursplan"
         },
         "paragraphs": [
           {
@@ -128,20 +130,35 @@
           "sv": "Introduktion till programmering"
         },
         "organization": "KTH Flemingsberg",
+        "years": "2023",
         "meta": {
-          "en": "Programming course in C, 2023",
-          "sv": "Programmeringskurs i C, 2023"
+          "en": "Programming course in C",
+          "sv": "Programmeringskurs i C"
         }
       },
+      {
+        "title": {
+          "en": "Foundation Year in Natural Sciences",
+          "sv": "Naturvetenskapligt basår"
+        },
+        "organization": "Stockholm Universitet",
+        "years": "2022",
+        "meta": {
+          "en": "Math 4 & Physics 2",
+          "sv": "Matte 4 och Fysik 2"
+        }
+      },
+
       {
         "title": {
           "en": "Technology - Product Development & Design",
           "sv": "Teknik - Produktutveckling och design"
         },
         "organization": "LBS Kreativa Gymnasiet Södra",
+        "years": "2017-2020",
         "meta": {
-          "en": "Game design & development, 2017-2020",
-          "sv": "Speldesign och spelutveckling, 2017-2020"
+          "en": "Game design & development",
+          "sv": "Speldesign och spelutveckling"
         }
       }
     ]
