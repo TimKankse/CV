@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import sourceContent from "../cv.content.json";
 
 type Language = "en" | "sv";
@@ -12,6 +12,7 @@ type ThemeName = "forest" | "ink" | "slate" | "burgundy" | "custom";
 type FontChoice = "humanist" | "serif" | "sans";
 type HeadingStyle = "rule" | "label" | "plain";
 type AppTheme = "light" | "dark";
+type ViewMode = "library" | "editor";
 
 type Contact = {
   id: string;
@@ -68,6 +69,15 @@ type StyleSettings = {
   sectionRule: "full" | "short" | "none";
 };
 
+type CvRecord = {
+  id: string;
+  title: string;
+  document: CvDocument;
+  styles: StyleSettings;
+  createdAt: number;
+  updatedAt: number;
+};
+
 type RawLocalized = string | LocalizedText;
 type RawItem = {
   title: RawLocalized;
@@ -78,7 +88,9 @@ type RawItem = {
   paragraphs?: RawLocalized[];
 };
 
-const STORAGE_KEY = "folio-cv-studio-v1";
+const LEGACY_STORAGE_KEY = "folio-cv-studio-v1";
+const THEME_STORAGE_KEY = "folio-cv-studio-theme";
+const CACHE_STORAGE_KEY = "folio-cv-studio-cache-v2";
 
 const languageLabels = {
   en: {
@@ -86,8 +98,9 @@ const languageLabels = {
     design: "Design",
     preview: "Preview",
     edit: "Edit",
-    saved: "Saved locally",
+    saved: "Saved",
     saving: "Saving…",
+    saveError: "Sync pending",
     addSection: "Add section",
     details: "Personal details",
   },
@@ -96,8 +109,9 @@ const languageLabels = {
     design: "Design",
     preview: "Förhandsvisning",
     edit: "Redigera",
-    saved: "Sparad lokalt",
+    saved: "Sparad",
     saving: "Sparar…",
+    saveError: "Synkning väntar",
     addSection: "Lägg till avsnitt",
     details: "Personuppgifter",
   },
@@ -210,6 +224,70 @@ function createInitialDocument(): CvDocument {
   };
 }
 
+function createBlankDocument(): CvDocument {
+  return {
+    person: {
+      name: { en: "", sv: "" },
+      headline: { en: "", sv: "" },
+      contacts: [
+        { id: newId("contact"), label: { en: "Email", sv: "E-post" }, value: { en: "", sv: "" } },
+        { id: newId("contact"), label: { en: "Location", sv: "Ort" }, value: { en: "", sv: "" } },
+      ],
+    },
+    sections: [
+      {
+        id: newId("profile"),
+        kind: "text",
+        heading: { en: "Profile", sv: "Profil" },
+        headingStyle: "rule",
+        compact: false,
+        textStyle: "paragraphs",
+        content: [{ en: "", sv: "" }],
+      },
+      {
+        id: newId("experience"),
+        kind: "entries",
+        heading: { en: "Experience", sv: "Erfarenhet" },
+        headingStyle: "rule",
+        compact: false,
+        entries: [{
+          id: newId("entry"),
+          title: { en: "", sv: "" },
+          organization: { en: "", sv: "" },
+          years: { en: "", sv: "" },
+          meta: { en: "", sv: "" },
+          contentStyle: "bullets",
+          content: [{ en: "", sv: "" }],
+        }],
+      },
+      {
+        id: newId("education"),
+        kind: "entries",
+        heading: { en: "Education", sv: "Utbildning" },
+        headingStyle: "rule",
+        compact: false,
+        entries: [{
+          id: newId("entry"),
+          title: { en: "", sv: "" },
+          organization: { en: "", sv: "" },
+          years: { en: "", sv: "" },
+          meta: { en: "", sv: "" },
+          contentStyle: "paragraphs",
+          content: [{ en: "", sv: "" }],
+        }],
+      },
+      {
+        id: newId("skills"),
+        kind: "skills",
+        heading: { en: "Skills", sv: "Färdigheter" },
+        headingStyle: "rule",
+        compact: true,
+        skills: [{ id: newId("skill"), label: { en: "", sv: "" }, value: { en: "", sv: "" } }],
+      },
+    ],
+  };
+}
+
 function newId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -254,6 +332,11 @@ function IconButton({ label, onClick, children, disabled = false }: { label: str
 function Home() {
   const [document, setDocument] = useState<CvDocument>(() => createInitialDocument());
   const [styles, setStyles] = useState<StyleSettings>(defaultStyle);
+  const [records, setRecords] = useState<CvRecord[]>([]);
+  const [view, setView] = useState<ViewMode>("library");
+  const [activeRecordId, setActiveRecordId] = useState<string | null>(null);
+  const [activeCreatedAt, setActiveCreatedAt] = useState(0);
+  const [libraryLoading, setLibraryLoading] = useState(true);
   const [language, setLanguage] = useState<Language>("en");
   const [activePanel, setActivePanel] = useState<"content" | "design">("content");
   const [activeSection, setActiveSection] = useState<string>("details");
@@ -261,41 +344,143 @@ function Home() {
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [appTheme, setAppTheme] = useState<AppTheme>("light");
   const [hydrated, setHydrated] = useState(false);
-  const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
+  const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
+  const savedSignature = useRef("");
 
   const ui = languageLabels[language];
   const selectedSection = document.sections.find((section) => section.id === activeSection);
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as { document?: CvDocument; styles?: StyleSettings; appTheme?: AppTheme };
-        if (parsed.document?.sections?.length) setDocument(parsed.document);
-        if (parsed.styles) setStyles({ ...defaultStyle, ...parsed.styles });
-        if (parsed.appTheme === "light" || parsed.appTheme === "dark") setAppTheme(parsed.appTheme);
-      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        setAppTheme("dark");
+    let cancelled = false;
+
+    async function loadLibrary() {
+      let legacy: { document?: CvDocument; styles?: StyleSettings; appTheme?: AppTheme } | null = null;
+      let cachedRecords: CvRecord[] = [];
+
+      try {
+        const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+        const storedLegacy = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+        const storedCache = window.localStorage.getItem(CACHE_STORAGE_KEY);
+        legacy = storedLegacy ? JSON.parse(storedLegacy) : null;
+        cachedRecords = storedCache ? JSON.parse(storedCache) : [];
+
+        if (storedTheme === "light" || storedTheme === "dark") {
+          setAppTheme(storedTheme);
+        } else if (legacy?.appTheme === "light" || legacy?.appTheme === "dark") {
+          setAppTheme(legacy.appTheme);
+        } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          setAppTheme("dark");
+        }
+      } catch {
+        // Editing remains available when browser storage is restricted.
       }
-    } catch {
-      // A private browsing policy can disable storage; editing still works in memory.
+
+      try {
+        const response = await fetch("/api/cvs", { cache: "no-store" });
+        if (!response.ok) throw new Error("Unable to load CVs");
+        const payload = await response.json() as { cvs?: CvRecord[] };
+        let nextRecords = Array.isArray(payload.cvs) ? payload.cvs : [];
+
+        if (nextRecords.length === 0) {
+          const now = Date.now();
+          const seedDocument = legacy?.document?.sections?.length ? legacy.document : createInitialDocument();
+          const seedStyles = legacy?.styles ? { ...defaultStyle, ...legacy.styles } : defaultStyle;
+          const seed: CvRecord = {
+            id: newId("cv"),
+            title: translated(seedDocument.person.name, "en") || "My CV",
+            document: seedDocument,
+            styles: seedStyles,
+            createdAt: now,
+            updatedAt: now,
+          };
+          const createResponse = await fetch("/api/cvs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(seed),
+          });
+          if (!createResponse.ok) throw new Error("Unable to create starter CV");
+          const created = await createResponse.json() as { cv: CvRecord };
+          nextRecords = [created.cv];
+        }
+
+        if (!cancelled) {
+          setRecords(nextRecords);
+          try {
+            window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(nextRecords));
+          } catch {
+            // The database remains the source of truth.
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          if (cachedRecords.length) {
+            setRecords(cachedRecords);
+          } else {
+            const now = Date.now();
+            const fallbackDocument = legacy?.document?.sections?.length ? legacy.document : createInitialDocument();
+            setRecords([{
+              id: newId("cv"),
+              title: translated(fallbackDocument.person.name, "en") || "My CV",
+              document: fallbackDocument,
+              styles: legacy?.styles ? { ...defaultStyle, ...legacy.styles } : defaultStyle,
+              createdAt: now,
+              updatedAt: now,
+            }]);
+          }
+          setSaveState("error");
+        }
+      } finally {
+        if (!cancelled) {
+          setLibraryLoading(false);
+          setHydrated(true);
+        }
+      }
     }
-    setHydrated(true);
+
+    void loadLibrary();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, appTheme);
+    } catch {
+      // The selected theme can safely fall back to this session only.
+    }
+  }, [appTheme, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated || view !== "editor" || !activeRecordId) return;
+    const signature = JSON.stringify({ document, styles });
+    if (signature === savedSignature.current) return;
     setSaveState("saving");
-    const timeout = window.setTimeout(() => {
+    const timeout = window.setTimeout(async () => {
+      const now = Date.now();
+      const record: CvRecord = {
+        id: activeRecordId,
+        title: translated(document.person.name, language) || (language === "sv" ? "Namnlöst CV" : "Untitled CV"),
+        document,
+        styles,
+        createdAt: activeCreatedAt || now,
+        updatedAt: now,
+      };
+      updateCachedRecord(record);
       try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ document, styles, appTheme }));
+        const response = await fetch("/api/cvs", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(record),
+        });
+        if (!response.ok) throw new Error("Unable to save CV");
+        savedSignature.current = signature;
+        setSaveState("saved");
       } catch {
-        // Keep the editor usable even when local storage is unavailable.
+        setSaveState("error");
       }
-      setSaveState("saved");
-    }, 350);
+    }, 500);
     return () => window.clearTimeout(timeout);
-  }, [document, styles, appTheme, hydrated]);
+  }, [activeCreatedAt, activeRecordId, document, hydrated, language, styles, view]);
 
   const previewVariables = useMemo(() => ({
     "--cv-accent": styles.accent,
@@ -309,6 +494,126 @@ function Home() {
         ? "Inter, Arial, sans-serif"
         : "'Avenir Next', Inter, Arial, sans-serif",
   }) as CSSProperties, [styles]);
+
+  function updateCachedRecord(record: CvRecord) {
+    setRecords((current) => {
+      const next = [record, ...current.filter((item) => item.id !== record.id)]
+        .sort((a, b) => b.updatedAt - a.updatedAt);
+      try {
+        window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // The database remains the source of truth.
+      }
+      return next;
+    });
+  }
+
+  async function saveRecordNow(record: CvRecord) {
+    setSaveState("saving");
+    updateCachedRecord(record);
+    try {
+      const response = await fetch("/api/cvs", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      });
+      if (!response.ok) throw new Error("Unable to save CV");
+      savedSignature.current = JSON.stringify({ document: record.document, styles: record.styles });
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
+    }
+  }
+
+  function openRecord(record: CvRecord) {
+    setDocument(record.document);
+    setStyles({ ...defaultStyle, ...record.styles });
+    setActiveRecordId(record.id);
+    setActiveCreatedAt(record.createdAt);
+    setActivePanel("content");
+    setActiveSection("details");
+    setMobileView("edit");
+    setSaveState("saved");
+    savedSignature.current = JSON.stringify({ document: record.document, styles: record.styles });
+    setView("editor");
+  }
+
+  async function createCv() {
+    const now = Date.now();
+    const record: CvRecord = {
+      id: newId("cv"),
+      title: language === "sv" ? "Namnlöst CV" : "Untitled CV",
+      document: createBlankDocument(),
+      styles: { ...defaultStyle },
+      createdAt: now,
+      updatedAt: now,
+    };
+    updateCachedRecord(record);
+    try {
+      const response = await fetch("/api/cvs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      });
+      if (!response.ok) throw new Error("Unable to create CV");
+      const payload = await response.json() as { cv: CvRecord };
+      updateCachedRecord(payload.cv);
+      openRecord(payload.cv);
+    } catch {
+      setSaveState("error");
+      openRecord(record);
+    }
+  }
+
+  async function deleteCv(record: CvRecord) {
+    const prompt = language === "sv"
+      ? `Ta bort “${record.title}”? Det går inte att ångra.`
+      : `Delete “${record.title}”? This cannot be undone.`;
+    if (!window.confirm(prompt)) return;
+
+    const previous = records;
+    const next = records.filter((item) => item.id !== record.id);
+    setRecords(next);
+    try {
+      window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // The database remains the source of truth.
+    }
+
+    try {
+      const response = await fetch(`/api/cvs?id=${encodeURIComponent(record.id)}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Unable to delete CV");
+    } catch {
+      setRecords(previous);
+      setSaveState("error");
+    }
+  }
+
+  function goToLibrary() {
+    const signature = JSON.stringify({ document, styles });
+    if (activeRecordId && signature !== savedSignature.current) {
+      const now = Date.now();
+      void saveRecordNow({
+        id: activeRecordId,
+        title: translated(document.person.name, language) || (language === "sv" ? "Namnlöst CV" : "Untitled CV"),
+        document,
+        styles,
+        createdAt: activeCreatedAt || now,
+        updatedAt: now,
+      });
+    }
+    setShowAddSection(false);
+    setView("library");
+  }
+
+  function renderLanguageSwitch() {
+    return (
+      <div className="language-switch" role="group" aria-label="CV language">
+        <button type="button" className={language === "en" ? "active" : ""} aria-pressed={language === "en"} onClick={() => setLanguage("en")}>EN</button>
+        <button type="button" className={language === "sv" ? "active" : ""} aria-pressed={language === "sv"} onClick={() => setLanguage("sv")}>SV</button>
+      </div>
+    );
+  }
 
   function updatePersonField(field: "name" | "headline", value: string) {
     setDocument((current) => ({
@@ -533,16 +838,121 @@ function Home() {
     );
   }
 
+  if (view === "library") {
+    const libraryCopy = language === "sv" ? {
+      eyebrow: "CV-bibliotek",
+      title: "Dina CV:n",
+      intro: "Öppna ett sparat CV och fortsätt där du slutade, eller skapa ett nytt från en ren mall.",
+      create: "Skapa nytt CV",
+      loading: "Hämtar dina CV:n…",
+      emptyTitle: "Inga CV:n ännu",
+      emptyText: "Skapa ditt första CV för att komma igång.",
+      open: "Öppna",
+      updated: "Uppdaterad",
+      delete: "Ta bort",
+    } : {
+      eyebrow: "CV library",
+      title: "Your CVs",
+      intro: "Open a saved CV and continue where you left off, or begin a new one from a clean structure.",
+      create: "Create new CV",
+      loading: "Loading your CVs…",
+      emptyTitle: "No CVs yet",
+      emptyText: "Create your first CV to get started.",
+      open: "Open",
+      updated: "Updated",
+      delete: "Delete",
+    };
+
+    return (
+      <main className={`studio-shell app-theme-${appTheme}`}>
+        <header className="topbar library-topbar">
+          <div className="brand-lockup"><span className="brand-mark">F</span><div><strong>Folio</strong><span>CV Studio</span></div></div>
+          <div className="top-actions">
+            {renderLanguageSwitch()}
+            <button
+              className="theme-mode-button"
+              onClick={() => setAppTheme((current) => current === "light" ? "dark" : "light")}
+              aria-label={`Switch to ${appTheme === "light" ? "dark" : "light"} mode`}
+              title={`Switch to ${appTheme === "light" ? "dark" : "light"} mode`}
+            >
+              <span aria-hidden="true">{appTheme === "light" ? "☾" : "☀"}</span>
+              <span className="theme-mode-label">{appTheme === "light" ? "Dark" : "Light"}</span>
+            </button>
+            <button className="primary-button" onClick={() => void createCv()}>＋ {libraryCopy.create}</button>
+          </div>
+        </header>
+
+        <section className="start-page">
+          <div className="start-hero">
+            <div className="start-hero-copy">
+              <span className="eyebrow">{libraryCopy.eyebrow}</span>
+              <h1>{libraryCopy.title}</h1>
+              <p>{libraryCopy.intro}</p>
+            </div>
+            <button className="primary-button start-create-button" onClick={() => void createCv()}>＋ {libraryCopy.create}</button>
+          </div>
+
+          {libraryLoading ? (
+            <div className="library-loading" role="status"><span />{libraryCopy.loading}</div>
+          ) : records.length ? (
+            <div className="library-grid">
+              {records.map((record) => {
+                const displayName = translated(record.document.person.name, language) || record.title;
+                const headline = translated(record.document.person.headline, language);
+                const date = new Intl.DateTimeFormat(language === "sv" ? "sv-SE" : "en-GB", { day: "numeric", month: "short", year: "numeric" }).format(record.updatedAt);
+                return (
+                  <article className="library-card" key={record.id}>
+                    <button className="library-card-preview" onClick={() => openRecord(record)} aria-label={`${libraryCopy.open} ${displayName}`}>
+                      <span className="library-paper" style={{ "--library-accent": record.styles.accent } as CSSProperties}>
+                        <span className="library-paper-header">
+                          <strong>{displayName}</strong>
+                          {headline && <em>{headline}</em>}
+                        </span>
+                        {record.document.sections.slice(0, 4).map((section) => (
+                          <span className="library-paper-section" key={section.id}>
+                            <b>{translated(section.heading, language)}</b>
+                            <i /><i /><i />
+                          </span>
+                        ))}
+                      </span>
+                    </button>
+                    <div className="library-card-footer">
+                      <div className="library-meta">
+                        <strong>{displayName}</strong>
+                        <span>{libraryCopy.updated} {date}</span>
+                      </div>
+                      <div className="library-card-actions">
+                        <IconButton label={`${libraryCopy.delete} ${displayName}`} onClick={() => void deleteCv(record)}>×</IconButton>
+                        <button className="soft-button library-open-button" onClick={() => openRecord(record)}>{libraryCopy.open}</button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="library-empty">
+              <span className="brand-mark">F</span>
+              <h2>{libraryCopy.emptyTitle}</h2>
+              <p>{libraryCopy.emptyText}</p>
+              <button className="primary-button" onClick={() => void createCv()}>＋ {libraryCopy.create}</button>
+            </div>
+          )}
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className={`studio-shell app-theme-${appTheme}`}>
       <header className="topbar">
-        <div className="brand-lockup"><span className="brand-mark">F</span><div><strong>Folio</strong><span>CV Studio</span></div></div>
+        <button className="brand-lockup brand-button" onClick={goToLibrary} aria-label="Back to your CVs"><span className="brand-mark">F</span><span className="brand-copy"><strong>Folio</strong><span>CV Studio</span></span></button>
         <div className="mobile-view-switch" aria-label="Mobile view">
           <button className={mobileView === "edit" ? "active" : ""} onClick={() => setMobileView("edit")}>{ui.edit}</button>
           <button className={mobileView === "preview" ? "active" : ""} onClick={() => setMobileView("preview")}>{ui.preview}</button>
         </div>
         <div className="top-actions">
-          <span className={`save-state ${saveState}`}>{saveState === "saved" ? ui.saved : ui.saving}</span>
+          <span className={`save-state ${saveState}`}>{saveState === "saved" ? ui.saved : saveState === "saving" ? ui.saving : ui.saveError}</span>
           <button
             className="theme-mode-button"
             onClick={() => setAppTheme((current) => current === "light" ? "dark" : "light")}
@@ -552,7 +962,7 @@ function Home() {
             <span aria-hidden="true">{appTheme === "light" ? "☾" : "☀"}</span>
             <span className="theme-mode-label">{appTheme === "light" ? "Dark" : "Light"}</span>
           </button>
-          <button className="language-button" onClick={() => setLanguage((current) => current === "en" ? "sv" : "en")} aria-label="Switch editing language">{language.toUpperCase()}</button>
+          {renderLanguageSwitch()}
           <button className="primary-button" onClick={exportPdf}>Export PDF</button>
         </div>
       </header>
