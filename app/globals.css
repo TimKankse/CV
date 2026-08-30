@@ -89,6 +89,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   --app-accent: #78b496;
   --app-accent-soft: #24372e;
   background: var(--app-canvas);
+  color: var(--app-ink);
   color-scheme: dark;
 }
 .app-theme-dark .topbar { background: rgba(24, 29, 26, .97); }
@@ -109,8 +110,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .app-theme-dark .color-field,
 .app-theme-dark .add-modal {
   background: #232a26;
+  border-color: var(--app-line);
   color: var(--app-ink);
 }
+.app-theme-dark .field > span,
+.app-theme-dark .range-field > span b,
+.app-theme-dark .color-field > span { color: #b8c2bb; }
+.app-theme-dark .field input,
+.app-theme-dark .field textarea,
+.app-theme-dark .field select,
+.app-theme-dark .check-field,
+.app-theme-dark .template-card,
+.app-theme-dark .theme-option,
+.app-theme-dark .color-field { border-color: var(--app-line); }
+.app-theme-dark .field input::placeholder,
+.app-theme-dark .field textarea::placeholder { color: #7f8c84; opacity: 1; }
+.app-theme-dark .icon-button { color: #aeb9b2; }
+.app-theme-dark .icon-button:hover:not(:disabled) { background: #303833; color: #f4f7f5; }
+.app-theme-dark .save-state.saving { color: #ddb77b; }
 .app-theme-dark .editor-panel { background: #1b211d; }
 .app-theme-dark .section-row:hover { background: #242b27; }
 .app-theme-dark .entry-card { background: #202622; border-color: #343d38; }
@@ -121,6 +138,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .app-theme-dark .section-type-grid button:hover { background: #263a30; border-color: #4f7562; }
 .app-theme-dark .reset-button { border-color: #4a383b; color: #d8a7ad; }
 .app-theme-dark .reset-button:hover { background: #312326; border-color: #6b484d; }
+.app-theme-dark .mobile-view-switch { background: #111613; }
+.app-theme-dark .mobile-view-switch button.active { background: #2a322d; color: #f2f6f3; }
 .app-theme-dark .panel-scroll::-webkit-scrollbar-thumb,
 .app-theme-dark .preview-stage::-webkit-scrollbar-thumb { background: #4a554e; border-color: transparent; }
 
