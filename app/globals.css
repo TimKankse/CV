@@ -56,7 +56,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .top-actions { gap: 9px; }
 .save-state { color: var(--app-muted); font-size: 11px; margin-right: 4px; min-width: 75px; text-align: right; }
 .save-state.saving { color: #99733c; }
-.primary-button, .language-button, .add-section, .soft-button, .reset-button {
+.primary-button, .language-button, .theme-mode-button, .add-section, .soft-button, .reset-button {
   border-radius: 8px;
   cursor: pointer;
   font-size: 12px;
@@ -67,8 +67,62 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .primary-button { background: var(--app-ink); border: 1px solid var(--app-ink); color: white; }
 .primary-button:hover { background: #28342e; }
 .language-button { background: white; border: 1px solid var(--app-line); min-width: 42px; padding-inline: 10px; }
-.language-button:hover { border-color: #a9b1ac; }
+.theme-mode-button {
+  align-items: center;
+  background: white;
+  border: 1px solid var(--app-line);
+  display: inline-flex;
+  gap: 7px;
+  justify-content: center;
+  padding-inline: 11px;
+}
+.theme-mode-button > span:first-child { font-size: 15px; line-height: 1; }
+.language-button:hover, .theme-mode-button:hover { border-color: #a9b1ac; }
 .mobile-view-switch { display: none; }
+
+.app-theme-dark {
+  --app-ink: #edf2ee;
+  --app-muted: #9ca8a1;
+  --app-line: #343d38;
+  --app-soft: #202622;
+  --app-canvas: #151a17;
+  --app-accent: #78b496;
+  --app-accent-soft: #24372e;
+  background: var(--app-canvas);
+  color-scheme: dark;
+}
+.app-theme-dark .topbar { background: rgba(24, 29, 26, .97); }
+.app-theme-dark .brand-mark { background: #e8eee9; color: #17201b; }
+.app-theme-dark .primary-button { background: #e8eee9; border-color: #e8eee9; color: #17201b; }
+.app-theme-dark .primary-button:hover { background: #d7e0d9; }
+.app-theme-dark .language-button,
+.app-theme-dark .theme-mode-button,
+.app-theme-dark .panel-tabs,
+.app-theme-dark .section-row.active,
+.app-theme-dark .field input,
+.app-theme-dark .field textarea,
+.app-theme-dark .field select,
+.app-theme-dark .check-field,
+.app-theme-dark .segmented-control button.active,
+.app-theme-dark .template-card,
+.app-theme-dark .theme-option,
+.app-theme-dark .color-field,
+.app-theme-dark .add-modal {
+  background: #232a26;
+  color: var(--app-ink);
+}
+.app-theme-dark .editor-panel { background: #1b211d; }
+.app-theme-dark .section-row:hover { background: #242b27; }
+.app-theme-dark .entry-card { background: #202622; border-color: #343d38; }
+.app-theme-dark .segmented-control { background: #171c19; }
+.app-theme-dark .template-mini { background: #1b211d; border-color: #343d38; }
+.app-theme-dark .template-mini b { background: #57625b; }
+.app-theme-dark .section-type-grid button { background: #202622; border-color: #343d38; }
+.app-theme-dark .section-type-grid button:hover { background: #263a30; border-color: #4f7562; }
+.app-theme-dark .reset-button { border-color: #4a383b; color: #d8a7ad; }
+.app-theme-dark .reset-button:hover { background: #312326; border-color: #6b484d; }
+.app-theme-dark .panel-scroll::-webkit-scrollbar-thumb,
+.app-theme-dark .preview-stage::-webkit-scrollbar-thumb { background: #4a554e; border-color: transparent; }
 
 .workspace {
   display: grid;

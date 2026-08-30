@@ -11,6 +11,7 @@ type TemplateName = "modern" | "classic" | "minimal";
 type ThemeName = "forest" | "ink" | "slate" | "burgundy" | "custom";
 type FontChoice = "humanist" | "serif" | "sans";
 type HeadingStyle = "rule" | "label" | "plain";
+type AppTheme = "light" | "dark";
 
 type Contact = {
   id: string;
@@ -258,6 +259,7 @@ function Home() {
   const [activeSection, setActiveSection] = useState<string>("details");
   const [showAddSection, setShowAddSection] = useState(false);
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
+  const [appTheme, setAppTheme] = useState<AppTheme>("light");
   const [hydrated, setHydrated] = useState(false);
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
 
@@ -268,9 +270,12 @@ function Home() {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as { document?: CvDocument; styles?: StyleSettings };
+        const parsed = JSON.parse(stored) as { document?: CvDocument; styles?: StyleSettings; appTheme?: AppTheme };
         if (parsed.document?.sections?.length) setDocument(parsed.document);
         if (parsed.styles) setStyles({ ...defaultStyle, ...parsed.styles });
+        if (parsed.appTheme === "light" || parsed.appTheme === "dark") setAppTheme(parsed.appTheme);
+      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        setAppTheme("dark");
       }
     } catch {
       // A private browsing policy can disable storage; editing still works in memory.
@@ -283,14 +288,14 @@ function Home() {
     setSaveState("saving");
     const timeout = window.setTimeout(() => {
       try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ document, styles }));
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ document, styles, appTheme }));
       } catch {
         // Keep the editor usable even when local storage is unavailable.
       }
       setSaveState("saved");
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [document, styles, hydrated]);
+  }, [document, styles, appTheme, hydrated]);
 
   const previewVariables = useMemo(() => ({
     "--cv-accent": styles.accent,
@@ -529,7 +534,7 @@ function Home() {
   }
 
   return (
-    <main className="studio-shell">
+    <main className={`studio-shell app-theme-${appTheme}`}>
       <header className="topbar">
         <div className="brand-lockup"><span className="brand-mark">F</span><div><strong>Folio</strong><span>CV Studio</span></div></div>
         <div className="mobile-view-switch" aria-label="Mobile view">
@@ -538,6 +543,15 @@ function Home() {
         </div>
         <div className="top-actions">
           <span className={`save-state ${saveState}`}>{saveState === "saved" ? ui.saved : ui.saving}</span>
+          <button
+            className="theme-mode-button"
+            onClick={() => setAppTheme((current) => current === "light" ? "dark" : "light")}
+            aria-label={`Switch to ${appTheme === "light" ? "dark" : "light"} mode`}
+            title={`Switch to ${appTheme === "light" ? "dark" : "light"} mode`}
+          >
+            <span aria-hidden="true">{appTheme === "light" ? "☾" : "☀"}</span>
+            <span className="theme-mode-label">{appTheme === "light" ? "Dark" : "Light"}</span>
+          </button>
           <button className="language-button" onClick={() => setLanguage((current) => current === "en" ? "sv" : "en")} aria-label="Switch editing language">{language.toUpperCase()}</button>
           <button className="primary-button" onClick={exportPdf}>Export PDF</button>
         </div>
