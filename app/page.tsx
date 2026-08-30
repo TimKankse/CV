@@ -4,8 +4,8 @@ import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import sourceContent from "../cv.content.json";
 
-type Language = "en" | "sv";
-type LocalizedText = { en: string; sv: string };
+type Language = string;
+type LocalizedText = Record<string, string>;
 type SectionKind = "text" | "entries" | "skills";
 type TemplateName = "modern" | "classic" | "minimal";
 type ThemeName = "forest" | "ink" | "slate" | "burgundy" | "custom";
@@ -13,6 +13,12 @@ type FontChoice = "humanist" | "serif" | "sans";
 type HeadingStyle = "rule" | "label" | "plain";
 type AppTheme = "light" | "dark";
 type ViewMode = "library" | "editor";
+
+type CvLanguage = {
+  id: string;
+  label: string;
+  shortLabel: string;
+};
 
 type Contact = {
   id: string;
@@ -49,6 +55,7 @@ type CvSection = {
 };
 
 type CvDocument = {
+  languages: CvLanguage[];
   person: {
     name: LocalizedText;
     headline: LocalizedText;
@@ -92,6 +99,11 @@ const LEGACY_STORAGE_KEY = "folio-cv-studio-v1";
 const THEME_STORAGE_KEY = "folio-cv-studio-theme";
 const CACHE_STORAGE_KEY = "folio-cv-studio-cache-v2";
 
+const defaultLanguages: CvLanguage[] = [
+  { id: "en", label: "English", shortLabel: "EN" },
+  { id: "sv", label: "Swedish", shortLabel: "SV" },
+];
+
 const languageLabels = {
   en: {
     content: "Content",
@@ -103,6 +115,9 @@ const languageLabels = {
     saveError: "Sync pending",
     addSection: "Add section",
     details: "Personal details",
+    sections: "CV sections",
+    backToSections: "All sections",
+    editingLanguage: "Editing",
   },
   sv: {
     content: "Innehåll",
@@ -114,6 +129,9 @@ const languageLabels = {
     saveError: "Synkning väntar",
     addSection: "Lägg till avsnitt",
     details: "Personuppgifter",
+    sections: "CV-avsnitt",
+    backToSections: "Alla avsnitt",
+    editingLanguage: "Redigerar",
   },
 } as const;
 
@@ -185,6 +203,7 @@ function createInitialDocument(): CvDocument {
   };
 
   return {
+    languages: defaultLanguages.map((item) => ({ ...item })),
     person: {
       name: localize(raw.person.name),
       headline: localize(raw.person.headline),
@@ -226,6 +245,7 @@ function createInitialDocument(): CvDocument {
 
 function createBlankDocument(): CvDocument {
   return {
+    languages: defaultLanguages.map((item) => ({ ...item })),
     person: {
       name: { en: "", sv: "" },
       headline: { en: "", sv: "" },
@@ -293,11 +313,35 @@ function newId(prefix: string) {
 }
 
 function translated(value: LocalizedText, language: Language) {
-  return value[language] || value[language === "en" ? "sv" : "en"];
+  return value[language] || "";
+}
+
+function translatedOrFallback(value: LocalizedText, language: Language) {
+  return translated(value, language) || Object.values(value).find((item) => item.trim()) || "";
 }
 
 function editTranslation(value: LocalizedText, language: Language, next: string): LocalizedText {
   return { ...value, [language]: next };
+}
+
+function normalizeDocument(input: CvDocument): CvDocument {
+  const legacy = input as CvDocument & { languages?: CvLanguage[] };
+  const languages = Array.isArray(legacy.languages) && legacy.languages.length
+    ? legacy.languages.map((item) => ({
+      id: item.id,
+      label: item.label || item.id.toUpperCase(),
+      shortLabel: (item.shortLabel || item.id).toUpperCase().slice(0, 5),
+    }))
+    : defaultLanguages.map((item) => ({ ...item }));
+  return { ...input, languages };
+}
+
+function normalizeRecord(record: CvRecord): CvRecord {
+  return { ...record, document: normalizeDocument(record.document), styles: { ...defaultStyle, ...record.styles } };
+}
+
+function primaryLanguage(document: CvDocument) {
+  return document.languages[0]?.id || "en";
 }
 
 function Field({
@@ -339,16 +383,18 @@ function Home() {
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [language, setLanguage] = useState<Language>("en");
   const [activePanel, setActivePanel] = useState<"content" | "design">("content");
-  const [activeSection, setActiveSection] = useState<string>("details");
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [showAddSection, setShowAddSection] = useState(false);
+  const [showLanguageManager, setShowLanguageManager] = useState(false);
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [appTheme, setAppTheme] = useState<AppTheme>("light");
   const [hydrated, setHydrated] = useState(false);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
   const savedSignature = useRef("");
 
-  const ui = languageLabels[language];
+  const ui = language === "sv" ? languageLabels.sv : languageLabels.en;
   const selectedSection = document.sections.find((section) => section.id === activeSection);
+  const activeLanguage = document.languages.find((item) => item.id === language) ?? document.languages[0];
 
   useEffect(() => {
     let cancelled = false;
@@ -362,7 +408,7 @@ function Home() {
         const storedLegacy = window.localStorage.getItem(LEGACY_STORAGE_KEY);
         const storedCache = window.localStorage.getItem(CACHE_STORAGE_KEY);
         legacy = storedLegacy ? JSON.parse(storedLegacy) : null;
-        cachedRecords = storedCache ? JSON.parse(storedCache) : [];
+        cachedRecords = storedCache ? (JSON.parse(storedCache) as CvRecord[]).map(normalizeRecord) : [];
 
         if (storedTheme === "light" || storedTheme === "dark") {
           setAppTheme(storedTheme);
@@ -379,11 +425,11 @@ function Home() {
         const response = await fetch("/api/cvs", { cache: "no-store" });
         if (!response.ok) throw new Error("Unable to load CVs");
         const payload = await response.json() as { cvs?: CvRecord[] };
-        let nextRecords = Array.isArray(payload.cvs) ? payload.cvs : [];
+        let nextRecords = Array.isArray(payload.cvs) ? payload.cvs.map(normalizeRecord) : [];
 
         if (nextRecords.length === 0) {
           const now = Date.now();
-          const seedDocument = legacy?.document?.sections?.length ? legacy.document : createInitialDocument();
+          const seedDocument = normalizeDocument(legacy?.document?.sections?.length ? legacy.document : createInitialDocument());
           const seedStyles = legacy?.styles ? { ...defaultStyle, ...legacy.styles } : defaultStyle;
           const seed: CvRecord = {
             id: newId("cv"),
@@ -400,7 +446,7 @@ function Home() {
           });
           if (!createResponse.ok) throw new Error("Unable to create starter CV");
           const created = await createResponse.json() as { cv: CvRecord };
-          nextRecords = [created.cv];
+          nextRecords = [normalizeRecord(created.cv)];
         }
 
         if (!cancelled) {
@@ -417,7 +463,7 @@ function Home() {
             setRecords(cachedRecords);
           } else {
             const now = Date.now();
-            const fallbackDocument = legacy?.document?.sections?.length ? legacy.document : createInitialDocument();
+            const fallbackDocument = normalizeDocument(legacy?.document?.sections?.length ? legacy.document : createInitialDocument());
             setRecords([{
               id: newId("cv"),
               title: translated(fallbackDocument.person.name, "en") || "My CV",
@@ -459,7 +505,7 @@ function Home() {
       const now = Date.now();
       const record: CvRecord = {
         id: activeRecordId,
-        title: translated(document.person.name, language) || (language === "sv" ? "Namnlöst CV" : "Untitled CV"),
+        title: translatedOrFallback(document.person.name, language) || (language === "sv" ? "Namnlöst CV" : "Untitled CV"),
         document,
         styles,
         createdAt: activeCreatedAt || now,
@@ -526,24 +572,27 @@ function Home() {
   }
 
   function openRecord(record: CvRecord) {
-    setDocument(record.document);
+    const nextDocument = normalizeDocument(record.document);
+    setDocument(nextDocument);
     setStyles({ ...defaultStyle, ...record.styles });
     setActiveRecordId(record.id);
     setActiveCreatedAt(record.createdAt);
     setActivePanel("content");
-    setActiveSection("details");
+    setActiveSection(null);
+    setLanguage(primaryLanguage(nextDocument));
     setMobileView("edit");
     setSaveState("saved");
-    savedSignature.current = JSON.stringify({ document: record.document, styles: record.styles });
+    savedSignature.current = JSON.stringify({ document: nextDocument, styles: { ...defaultStyle, ...record.styles } });
     setView("editor");
   }
 
   async function createCv() {
     const now = Date.now();
+    const blankDocument = createBlankDocument();
     const record: CvRecord = {
       id: newId("cv"),
-      title: language === "sv" ? "Namnlöst CV" : "Untitled CV",
-      document: createBlankDocument(),
+      title: "Untitled CV",
+      document: blankDocument,
       styles: { ...defaultStyle },
       createdAt: now,
       updatedAt: now,
@@ -595,7 +644,7 @@ function Home() {
       const now = Date.now();
       void saveRecordNow({
         id: activeRecordId,
-        title: translated(document.person.name, language) || (language === "sv" ? "Namnlöst CV" : "Untitled CV"),
+        title: translatedOrFallback(document.person.name, language) || (language === "sv" ? "Namnlöst CV" : "Untitled CV"),
         document,
         styles,
         createdAt: activeCreatedAt || now,
@@ -603,16 +652,49 @@ function Home() {
       });
     }
     setShowAddSection(false);
+    setShowLanguageManager(false);
     setView("library");
   }
 
   function renderLanguageSwitch() {
     return (
       <div className="language-switch" role="group" aria-label="CV language">
-        <button type="button" className={language === "en" ? "active" : ""} aria-pressed={language === "en"} onClick={() => setLanguage("en")}>EN</button>
-        <button type="button" className={language === "sv" ? "active" : ""} aria-pressed={language === "sv"} onClick={() => setLanguage("sv")}>SV</button>
+        {document.languages.map((item) => (
+          <button type="button" className={language === item.id ? "active" : ""} aria-pressed={language === item.id} onClick={() => setLanguage(item.id)} title={item.label} key={item.id}>{item.shortLabel || "…"}</button>
+        ))}
+        <button type="button" className="manage-languages-button" onClick={() => setShowLanguageManager(true)} aria-label="Manage CV languages" title="Manage CV languages">＋</button>
       </div>
     );
+  }
+
+  function addLanguage() {
+    const id = newId("language");
+    const nextLanguage: CvLanguage = {
+      id,
+      label: "New language",
+      shortLabel: `L${document.languages.length + 1}`,
+    };
+    setDocument((current) => ({ ...current, languages: [...current.languages, nextLanguage] }));
+    setLanguage(id);
+  }
+
+  function updateLanguage(languageId: string, field: "label" | "shortLabel", value: string) {
+    const nextValue = field === "shortLabel"
+      ? value.replace(/\s/g, "").toUpperCase().slice(0, 5)
+      : value;
+    setDocument((current) => ({
+      ...current,
+      languages: current.languages.map((item) => item.id === languageId ? { ...item, [field]: nextValue } : item),
+    }));
+  }
+
+  function removeLanguage(languageId: string) {
+    if (document.languages.length === 1) return;
+    const item = document.languages.find((candidate) => candidate.id === languageId);
+    if (!item || !window.confirm(`Remove ${item.label || "this language"} from this CV?`)) return;
+    const remaining = document.languages.filter((candidate) => candidate.id !== languageId);
+    setDocument((current) => ({ ...current, languages: remaining }));
+    if (language === languageId) setLanguage(remaining[0].id);
   }
 
   function updatePersonField(field: "name" | "headline", value: string) {
@@ -665,9 +747,9 @@ function Home() {
 
   function removeSection(sectionId: string) {
     const section = document.sections.find((item) => item.id === sectionId);
-    if (!section || !window.confirm(`Remove “${translated(section.heading, language)}”?`)) return;
+    if (!section || !window.confirm(`Remove “${translatedOrFallback(section.heading, language)}”?`)) return;
     setDocument((current) => ({ ...current, sections: current.sections.filter((item) => item.id !== sectionId) }));
-    setActiveSection("details");
+    setActiveSection(null);
   }
 
   function addSection(kind: "experience" | "education" | "text" | "bullets" | "skills") {
@@ -725,12 +807,13 @@ function Home() {
     if (!window.confirm("Reset the CV to the original project content?")) return;
     setDocument(createInitialDocument());
     setStyles(defaultStyle);
-    setActiveSection("details");
+    setLanguage("en");
+    setActiveSection(null);
   }
 
   function exportPdf() {
     const previousTitle = window.document.title;
-    window.document.title = `${translated(document.person.name, language) || "CV"} — CV`;
+    window.document.title = `${translatedOrFallback(document.person.name, language) || "CV"} — CV`;
     const restore = () => {
       window.document.title = previousTitle;
       window.removeEventListener("afterprint", restore);
@@ -743,7 +826,7 @@ function Home() {
     return (
       <div className="section-editor">
         <div className="editor-title-row">
-          <div><span className="eyebrow">Section</span><h2>{translated(section.heading, language) || "Untitled section"}</h2></div>
+          <div><span className="eyebrow">Section</span><h2>{translatedOrFallback(section.heading, language) || "Untitled section"}</h2></div>
           <IconButton label="Delete section" onClick={() => removeSection(section.id)}>×</IconButton>
         </div>
         <Field label="Section heading" value={translated(section.heading, language)} onChange={(value) => updateSection(section.id, (current) => ({ ...current, heading: editTranslation(current.heading, language, value) }))} />
@@ -868,7 +951,6 @@ function Home() {
         <header className="topbar library-topbar">
           <div className="brand-lockup"><span className="brand-mark">F</span><div><strong>Folio</strong><span>CV Studio</span></div></div>
           <div className="top-actions">
-            {renderLanguageSwitch()}
             <button
               className="theme-mode-button"
               onClick={() => setAppTheme((current) => current === "light" ? "dark" : "light")}
@@ -897,8 +979,10 @@ function Home() {
           ) : records.length ? (
             <div className="library-grid">
               {records.map((record) => {
-                const displayName = translated(record.document.person.name, language) || record.title;
-                const headline = translated(record.document.person.headline, language);
+                const recordDocument = normalizeDocument(record.document);
+                const cardLanguage = recordDocument.languages.some((item) => item.id === language) ? language : primaryLanguage(recordDocument);
+                const displayName = translated(recordDocument.person.name, cardLanguage) || record.title;
+                const headline = translated(recordDocument.person.headline, cardLanguage);
                 const date = new Intl.DateTimeFormat(language === "sv" ? "sv-SE" : "en-GB", { day: "numeric", month: "short", year: "numeric" }).format(record.updatedAt);
                 return (
                   <article className="library-card" key={record.id}>
@@ -908,9 +992,9 @@ function Home() {
                           <strong>{displayName}</strong>
                           {headline && <em>{headline}</em>}
                         </span>
-                        {record.document.sections.slice(0, 4).map((section) => (
+                        {recordDocument.sections.slice(0, 4).map((section) => (
                           <span className="library-paper-section" key={section.id}>
-                            <b>{translated(section.heading, language)}</b>
+                            <b>{translated(section.heading, cardLanguage)}</b>
                             <i /><i /><i />
                           </span>
                         ))}
@@ -975,37 +1059,48 @@ function Home() {
           </div>
 
           {activePanel === "content" ? (
-            <div className="panel-scroll">
-              <div className="document-heading"><div><span className="eyebrow">Document</span><h1>{translated(document.person.name, language) || "Untitled CV"}</h1></div></div>
-              <div className="section-list" aria-label="CV sections">
-                <div className={`section-row ${activeSection === "details" ? "active" : ""}`}><button className="section-select" onClick={() => setActiveSection("details")}><span className="section-number">00</span><span>{ui.details}</span></button></div>
-                {document.sections.map((section, index) => (
-                  <div className={`section-row ${activeSection === section.id ? "active" : ""}`} key={section.id}>
-                    <button className="section-select" onClick={() => setActiveSection(section.id)}><span className="section-number">{String(index + 1).padStart(2, "0")}</span><span>{translated(section.heading, language) || "Untitled section"}</span></button>
-                    <div className="reorder-controls"><IconButton label="Move section up" disabled={index === 0} onClick={() => moveSection(section.id, -1)}>↑</IconButton><IconButton label="Move section down" disabled={index === document.sections.length - 1} onClick={() => moveSection(section.id, 1)}>↓</IconButton></div>
-                  </div>
-                ))}
-              </div>
-              <button className="add-section" onClick={() => setShowAddSection(true)}>＋ {ui.addSection}</button>
-
-              <div className="editor-divider" />
-              {activeSection === "details" ? (
-                <div className="section-editor">
-                  <div className="editor-title-row"><div><span className="eyebrow">Header</span><h2>{ui.details}</h2></div></div>
-                  <Field label="Full name" value={translated(document.person.name, language)} onChange={(value) => updatePersonField("name", value)} />
-                  <Field label="Professional headline" value={translated(document.person.headline, language)} onChange={(value) => updatePersonField("headline", value)} />
-                  <div className="entry-stack contacts-editor">
-                    {document.person.contacts.map((contact) => (
-                      <div className="contact-editor-row" key={contact.id}>
-                        <Field label="Label" value={translated(contact.label, language)} onChange={(value) => updateContact(contact.id, "label", value)} />
-                        <Field label="Value" value={translated(contact.value, language)} onChange={(value) => updateContact(contact.id, "value", value)} />
-                        <IconButton label="Remove contact detail" onClick={() => removeContact(contact.id)}>×</IconButton>
+            <div className={`panel-scroll ${activeSection ? "panel-scroll-editor" : ""}`}>
+              {activeSection === null ? (
+                <div className="section-index-view">
+                  <div className="document-heading"><div><span className="eyebrow">Document</span><h1>{translatedOrFallback(document.person.name, language) || "Untitled CV"}</h1></div></div>
+                  <div className="section-index-heading"><span>{ui.sections}</span><span>{document.sections.length + 1}</span></div>
+                  <div className="section-list" aria-label="CV sections">
+                    <div className="section-row"><button className="section-select" onClick={() => setActiveSection("details")}><span className="section-number">00</span><span>{ui.details}</span><span className="section-open-arrow" aria-hidden="true">›</span></button></div>
+                    {document.sections.map((section, index) => (
+                      <div className="section-row" key={section.id}>
+                        <button className="section-select" onClick={() => setActiveSection(section.id)}><span className="section-number">{String(index + 1).padStart(2, "0")}</span><span>{translatedOrFallback(section.heading, language) || "Untitled section"}</span><span className="section-open-arrow" aria-hidden="true">›</span></button>
+                        <div className="reorder-controls"><IconButton label="Move section up" disabled={index === 0} onClick={() => moveSection(section.id, -1)}>↑</IconButton><IconButton label="Move section down" disabled={index === document.sections.length - 1} onClick={() => moveSection(section.id, 1)}>↓</IconButton></div>
                       </div>
                     ))}
-                    <button className="soft-button" onClick={addContact}>＋ Add contact detail</button>
                   </div>
+                  <button className="add-section" onClick={() => setShowAddSection(true)}>＋ {ui.addSection}</button>
                 </div>
-              ) : selectedSection ? renderSectionEditor(selectedSection) : null}
+              ) : (
+                <div className="section-detail-view">
+                  <div className="section-detail-toolbar">
+                    <button className="editor-back-button" onClick={() => setActiveSection(null)}><span aria-hidden="true">←</span>{ui.backToSections}</button>
+                    <span className="editing-language">{ui.editingLanguage} {activeLanguage?.label || language.toUpperCase()}</span>
+                  </div>
+                  <div className="editor-divider" />
+                  {activeSection === "details" ? (
+                    <div className="section-editor">
+                      <div className="editor-title-row"><div><span className="eyebrow">Header</span><h2>{ui.details}</h2></div></div>
+                      <Field label="Full name" value={translated(document.person.name, language)} onChange={(value) => updatePersonField("name", value)} />
+                      <Field label="Professional headline" value={translated(document.person.headline, language)} onChange={(value) => updatePersonField("headline", value)} />
+                      <div className="entry-stack contacts-editor">
+                        {document.person.contacts.map((contact) => (
+                          <div className="contact-editor-row" key={contact.id}>
+                            <Field label="Label" value={translated(contact.label, language)} onChange={(value) => updateContact(contact.id, "label", value)} />
+                            <Field label="Value" value={translated(contact.value, language)} onChange={(value) => updateContact(contact.id, "value", value)} />
+                            <IconButton label="Remove contact detail" onClick={() => removeContact(contact.id)}>×</IconButton>
+                          </div>
+                        ))}
+                        <button className="soft-button" onClick={addContact}>＋ Add contact detail</button>
+                      </div>
+                    </div>
+                  ) : selectedSection ? renderSectionEditor(selectedSection) : null}
+                </div>
+              )}
             </div>
           ) : (
             <div className="panel-scroll design-panel">
@@ -1053,6 +1148,29 @@ function Home() {
               <button onClick={() => addSection("text")}><strong>Custom text</strong><span>Free-form paragraphs</span></button>
               <button onClick={() => addSection("bullets")}><strong>Custom list</strong><span>A clean list for anything else</span></button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showLanguageManager && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setShowLanguageManager(false)}>
+          <div className="add-modal language-modal" role="dialog" aria-modal="true" aria-labelledby="language-manager-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="modal-heading">
+              <div><span className="eyebrow">Translations</span><h2 id="language-manager-title">CV languages</h2><p>Add as many language versions as you need. Each language keeps its own text while sharing the same layout and style.</p></div>
+              <IconButton label="Close" onClick={() => setShowLanguageManager(false)}>×</IconButton>
+            </div>
+            <div className="language-manager-list">
+              {document.languages.map((item) => (
+                <div className={`language-manager-row ${language === item.id ? "active" : ""}`} key={item.id}>
+                  <button className="language-current-button" onClick={() => setLanguage(item.id)} aria-label={`Edit ${item.label || "language"}`} aria-pressed={language === item.id}><span>{language === item.id ? "✓" : ""}</span></button>
+                  <label className="field"><span>Language name</span><input value={item.label} onChange={(event) => updateLanguage(item.id, "label", event.target.value)} placeholder="e.g. German" /></label>
+                  <label className="field language-code-field"><span>Button label</span><input value={item.shortLabel} onChange={(event) => updateLanguage(item.id, "shortLabel", event.target.value)} placeholder="DE" /></label>
+                  <IconButton label={`Remove ${item.label || "language"}`} disabled={document.languages.length === 1} onClick={() => removeLanguage(item.id)}>×</IconButton>
+                </div>
+              ))}
+            </div>
+            <button className="soft-button add-language-row-button" onClick={addLanguage}>＋ Add language</button>
+            <p className="language-manager-note">Select the circle beside a language to edit that version of your CV.</p>
           </div>
         </div>
       )}
