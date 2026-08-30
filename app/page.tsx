@@ -2,6 +2,25 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { IconType } from "react-icons";
+import {
+  FaBehance,
+  FaBriefcase,
+  FaDribbble,
+  FaEnvelope,
+  FaGithub,
+  FaGitlab,
+  FaGlobe,
+  FaLink,
+  FaLinkedinIn,
+  FaLocationDot,
+  FaMastodon,
+  FaMedium,
+  FaPhone,
+  FaStackOverflow,
+  FaXTwitter,
+} from "react-icons/fa6";
+import { SiDevdotto, SiFiverr, SiGlassdoor, SiIndeed, SiUpwork, SiWellfound } from "react-icons/si";
 import sourceContent from "../cv.content.json";
 
 type Language = string;
@@ -13,6 +32,8 @@ type FontChoice = "humanist" | "serif" | "sans";
 type HeadingStyle = "rule" | "label" | "plain";
 type AppTheme = "light" | "dark";
 type ViewMode = "library" | "editor";
+type ContactDisplay = "plain" | "labels" | "icons" | "icons-labels";
+type ContactIconName = "auto" | "email" | "phone" | "location" | "website" | "link" | "linkedin" | "github" | "gitlab" | "stack-overflow" | "behance" | "dribbble" | "medium" | "x" | "mastodon" | "indeed" | "glassdoor" | "wellfound" | "upwork" | "fiverr" | "dev" | "portfolio";
 
 type CvLanguage = {
   id: string;
@@ -24,6 +45,7 @@ type Contact = {
   id: string;
   label: LocalizedText;
   value: LocalizedText;
+  icon: ContactIconName;
 };
 
 type CvEntry = {
@@ -59,6 +81,7 @@ type CvDocument = {
   person: {
     name: LocalizedText;
     headline: LocalizedText;
+    contactDisplay: ContactDisplay;
     contacts: Contact[];
   };
   sections: CvSection[];
@@ -103,6 +126,55 @@ const defaultLanguages: CvLanguage[] = [
   { id: "en", label: "English", shortLabel: "EN" },
   { id: "sv", label: "Swedish", shortLabel: "SV" },
 ];
+
+const contactIconOptions: Array<{ value: ContactIconName; label: string }> = [
+  { value: "auto", label: "Automatic" },
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone" },
+  { value: "location", label: "Location" },
+  { value: "website", label: "Website" },
+  { value: "link", label: "Generic link" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "github", label: "GitHub" },
+  { value: "gitlab", label: "GitLab" },
+  { value: "stack-overflow", label: "Stack Overflow" },
+  { value: "behance", label: "Behance" },
+  { value: "dribbble", label: "Dribbble" },
+  { value: "medium", label: "Medium" },
+  { value: "dev", label: "DEV Community" },
+  { value: "x", label: "X / Twitter" },
+  { value: "mastodon", label: "Mastodon" },
+  { value: "indeed", label: "Indeed" },
+  { value: "glassdoor", label: "Glassdoor" },
+  { value: "wellfound", label: "Wellfound" },
+  { value: "upwork", label: "Upwork" },
+  { value: "fiverr", label: "Fiverr" },
+  { value: "portfolio", label: "Portfolio / work" },
+];
+
+const contactIconComponents: Record<Exclude<ContactIconName, "auto">, IconType> = {
+  email: FaEnvelope,
+  phone: FaPhone,
+  location: FaLocationDot,
+  website: FaGlobe,
+  link: FaLink,
+  linkedin: FaLinkedinIn,
+  github: FaGithub,
+  gitlab: FaGitlab,
+  "stack-overflow": FaStackOverflow,
+  behance: FaBehance,
+  dribbble: FaDribbble,
+  medium: FaMedium,
+  dev: SiDevdotto,
+  x: FaXTwitter,
+  mastodon: FaMastodon,
+  indeed: SiIndeed,
+  glassdoor: SiGlassdoor,
+  wellfound: SiWellfound,
+  upwork: SiUpwork,
+  fiverr: SiFiverr,
+  portfolio: FaBriefcase,
+};
 
 const languageLabels = {
   en: {
@@ -207,10 +279,12 @@ function createInitialDocument(): CvDocument {
     person: {
       name: localize(raw.person.name),
       headline: localize(raw.person.headline),
+      contactDisplay: "plain",
       contacts: raw.person.contact.map((contact, index) => ({
         id: `contact-${index}`,
         label: localize(contact.label),
         value: localize(contact.value),
+        icon: "auto",
       })),
     },
     sections: [
@@ -249,9 +323,10 @@ function createBlankDocument(): CvDocument {
     person: {
       name: { en: "", sv: "" },
       headline: { en: "", sv: "" },
+      contactDisplay: "plain",
       contacts: [
-        { id: newId("contact"), label: { en: "Email", sv: "E-post" }, value: { en: "", sv: "" } },
-        { id: newId("contact"), label: { en: "Location", sv: "Ort" }, value: { en: "", sv: "" } },
+        { id: newId("contact"), label: { en: "Email", sv: "E-post" }, value: { en: "", sv: "" }, icon: "auto" },
+        { id: newId("contact"), label: { en: "Location", sv: "Ort" }, value: { en: "", sv: "" }, icon: "auto" },
       ],
     },
     sections: [
@@ -333,7 +408,15 @@ function normalizeDocument(input: CvDocument): CvDocument {
       shortLabel: (item.shortLabel || item.id).toUpperCase().slice(0, 5),
     }))
     : defaultLanguages.map((item) => ({ ...item }));
-  return { ...input, languages };
+  return {
+    ...input,
+    languages,
+    person: {
+      ...input.person,
+      contactDisplay: input.person.contactDisplay || "plain",
+      contacts: input.person.contacts.map((contact) => ({ ...contact, icon: contact.icon || "auto" })),
+    },
+  };
 }
 
 function normalizeRecord(record: CvRecord): CvRecord {
@@ -342,6 +425,40 @@ function normalizeRecord(record: CvRecord): CvRecord {
 
 function primaryLanguage(document: CvDocument) {
   return document.languages[0]?.id || "en";
+}
+
+function inferContactIcon(label: string, value: string): Exclude<ContactIconName, "auto"> {
+  const normalizedLabel = label.trim().toLowerCase();
+  const text = `${normalizedLabel} ${value.toLowerCase()}`;
+  if (text.includes("linkedin")) return "linkedin";
+  if (text.includes("github")) return "github";
+  if (text.includes("gitlab")) return "gitlab";
+  if (text.includes("stackoverflow") || text.includes("stack overflow")) return "stack-overflow";
+  if (text.includes("behance")) return "behance";
+  if (text.includes("dribbble")) return "dribbble";
+  if (text.includes("medium.com") || normalizedLabel === "medium") return "medium";
+  if (text.includes("dev.to") || normalizedLabel === "dev") return "dev";
+  if (text.includes("twitter") || text.includes("x.com") || normalizedLabel === "x") return "x";
+  if (text.includes("mastodon")) return "mastodon";
+  if (text.includes("indeed")) return "indeed";
+  if (text.includes("glassdoor")) return "glassdoor";
+  if (text.includes("wellfound") || text.includes("angellist")) return "wellfound";
+  if (text.includes("upwork")) return "upwork";
+  if (text.includes("fiverr")) return "fiverr";
+  if (text.includes("portfolio") || text.includes("work samples") || text.includes("arbetsprover")) return "portfolio";
+  if (normalizedLabel.includes("mail") || normalizedLabel.includes("e-post") || /\S+@\S+/.test(value)) return "email";
+  if (normalizedLabel.includes("phone") || normalizedLabel.includes("telefon") || normalizedLabel.includes("mobile") || normalizedLabel === "tel") return "phone";
+  if (normalizedLabel.includes("location") || normalizedLabel.includes("address") || normalizedLabel.includes("ort") || normalizedLabel.includes("plats")) return "location";
+  if (/^https?:\/\//i.test(value) || normalizedLabel.includes("website") || normalizedLabel.includes("webbplats")) return "website";
+  return "link";
+}
+
+function ContactGlyph({ contact, language }: { contact: Contact; language: Language }) {
+  const label = translatedOrFallback(contact.label, language);
+  const value = translated(contact.value, language);
+  const iconName = contact.icon === "auto" ? inferContactIcon(label, value) : contact.icon;
+  const Icon = contactIconComponents[iconName];
+  return <Icon aria-hidden="true" focusable="false" />;
 }
 
 function Field({
@@ -395,6 +512,8 @@ function Home() {
   const ui = language === "sv" ? languageLabels.sv : languageLabels.en;
   const selectedSection = document.sections.find((section) => section.id === activeSection);
   const activeLanguage = document.languages.find((item) => item.id === language) ?? document.languages[0];
+  const showContactLabels = document.person.contactDisplay === "labels" || document.person.contactDisplay === "icons-labels";
+  const showContactIcons = document.person.contactDisplay === "icons" || document.person.contactDisplay === "icons-labels";
 
   useEffect(() => {
     let cancelled = false;
@@ -716,12 +835,22 @@ function Home() {
     }));
   }
 
+  function updateContactIcon(contactId: string, icon: ContactIconName) {
+    setDocument((current) => ({
+      ...current,
+      person: {
+        ...current.person,
+        contacts: current.person.contacts.map((contact) => contact.id === contactId ? { ...contact, icon } : contact),
+      },
+    }));
+  }
+
   function addContact() {
     setDocument((current) => ({
       ...current,
       person: {
         ...current.person,
-        contacts: [...current.person.contacts, { id: newId("contact"), label: { en: "Label", sv: "Etikett" }, value: { en: "", sv: "" } }],
+        contacts: [...current.person.contacts, { id: newId("contact"), label: { en: "Label", sv: "Etikett" }, value: { en: "", sv: "" }, icon: "auto" }],
       },
     }));
   }
@@ -1087,12 +1216,31 @@ function Home() {
                       <div className="editor-title-row"><div><span className="eyebrow">Header</span><h2>{ui.details}</h2></div></div>
                       <Field label="Full name" value={translated(document.person.name, language)} onChange={(value) => updatePersonField("name", value)} />
                       <Field label="Professional headline" value={translated(document.person.headline, language)} onChange={(value) => updatePersonField("headline", value)} />
+                      <div className="contact-display-setting">
+                        <span className="form-section-label">Contact appearance</span>
+                        <div className="segmented-control contact-style-control" role="group" aria-label="Contact appearance">
+                          {([
+                            ["plain", "Values"],
+                            ["labels", "Labels"],
+                            ["icons", "Icons"],
+                            ["icons-labels", "Both"],
+                          ] as Array<[ContactDisplay, string]>).map(([value, label]) => (
+                            <button className={document.person.contactDisplay === value ? "active" : ""} onClick={() => setDocument((current) => ({ ...current, person: { ...current.person, contactDisplay: value } }))} key={value}>{label}</button>
+                          ))}
+                        </div>
+                      </div>
                       <div className="entry-stack contacts-editor">
                         {document.person.contacts.map((contact) => (
-                          <div className="contact-editor-row" key={contact.id}>
-                            <Field label="Label" value={translated(contact.label, language)} onChange={(value) => updateContact(contact.id, "label", value)} />
-                            <Field label="Value" value={translated(contact.value, language)} onChange={(value) => updateContact(contact.id, "value", value)} />
-                            <IconButton label="Remove contact detail" onClick={() => removeContact(contact.id)}>×</IconButton>
+                          <div className="contact-editor-card" key={contact.id}>
+                            <div className="contact-editor-main">
+                              <Field label="Label" value={translated(contact.label, language)} onChange={(value) => updateContact(contact.id, "label", value)} />
+                              <Field label="Value" value={translated(contact.value, language)} onChange={(value) => updateContact(contact.id, "value", value)} />
+                            </div>
+                            <div className="contact-editor-footer">
+                              <label className="field contact-icon-select"><span>Icon</span><select value={contact.icon} onChange={(event) => updateContactIcon(contact.id, event.target.value as ContactIconName)}>{contactIconOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
+                              <span className="contact-icon-preview" title="Icon preview"><ContactGlyph contact={contact} language={language} /></span>
+                              <IconButton label="Remove contact detail" onClick={() => removeContact(contact.id)}>×</IconButton>
+                            </div>
                           </div>
                         ))}
                         <button className="soft-button" onClick={addContact}>＋ Add contact detail</button>
@@ -1130,7 +1278,13 @@ function Home() {
             <header className="resume-header">
               <p className="resume-headline">{translated(document.person.headline, language)}</p>
               <h2>{translated(document.person.name, language)}</h2>
-              <div className="resume-contacts">{document.person.contacts.filter((contact) => translated(contact.value, language).trim()).map((contact) => <span key={contact.id}>{translated(contact.value, language)}</span>)}</div>
+              <div className="resume-contacts">{document.person.contacts.filter((contact) => translated(contact.value, language).trim()).map((contact) => (
+                <span className="resume-contact" key={contact.id}>
+                  {showContactIcons && <span className="resume-contact-icon"><ContactGlyph contact={contact} language={language} /></span>}
+                  {showContactLabels && translated(contact.label, language) && <strong>{translated(contact.label, language)}:</strong>}
+                  <span className="resume-contact-value">{translated(contact.value, language)}</span>
+                </span>
+              ))}</div>
             </header>
             <div className="resume-body">{document.sections.map(renderPreviewSection)}</div>
           </article>
