@@ -46,6 +46,7 @@ type Contact = {
   label: LocalizedText;
   value: LocalizedText;
   icon: ContactIconName;
+  href: string;
 };
 
 type CvEntry = {
@@ -285,6 +286,7 @@ function createInitialDocument(): CvDocument {
         label: localize(contact.label),
         value: localize(contact.value),
         icon: "auto",
+        href: "",
       })),
     },
     sections: [
@@ -325,8 +327,8 @@ function createBlankDocument(): CvDocument {
       headline: { en: "", sv: "" },
       contactDisplay: "plain",
       contacts: [
-        { id: newId("contact"), label: { en: "Email", sv: "E-post" }, value: { en: "", sv: "" }, icon: "auto" },
-        { id: newId("contact"), label: { en: "Location", sv: "Ort" }, value: { en: "", sv: "" }, icon: "auto" },
+        { id: newId("contact"), label: { en: "Email", sv: "E-post" }, value: { en: "", sv: "" }, icon: "auto", href: "" },
+        { id: newId("contact"), label: { en: "Location", sv: "Ort" }, value: { en: "", sv: "" }, icon: "auto", href: "" },
       ],
     },
     sections: [
@@ -414,7 +416,7 @@ function normalizeDocument(input: CvDocument): CvDocument {
     person: {
       ...input.person,
       contactDisplay: input.person.contactDisplay || "plain",
-      contacts: input.person.contacts.map((contact) => ({ ...contact, icon: contact.icon || "auto" })),
+      contacts: input.person.contacts.map((contact) => ({ ...contact, icon: contact.icon || "auto", href: contact.href || "" })),
     },
   };
 }
@@ -459,6 +461,20 @@ function ContactGlyph({ contact, language }: { contact: Contact; language: Langu
   const iconName = contact.icon === "auto" ? inferContactIcon(label, value) : contact.icon;
   const Icon = contactIconComponents[iconName];
   return <Icon aria-hidden="true" focusable="false" />;
+}
+
+function contactHref(contact: Contact, language: Language) {
+  const value = translated(contact.value, language).trim();
+  const label = translatedOrFallback(contact.label, language);
+  const iconName = contact.icon === "auto" ? inferContactIcon(label, value) : contact.icon;
+  const explicit = contact.href.trim();
+  const candidate = explicit || value;
+
+  if (/^(https?:\/\/|mailto:|tel:)/i.test(candidate)) return candidate;
+  if (/^(?:www\.)?[\w.-]+\.[a-z]{2,}(?:[/?#].*)?$/i.test(candidate)) return `https://${candidate}`;
+  if (!explicit && iconName === "email" && /\S+@\S+/.test(value)) return `mailto:${value}`;
+  if (!explicit && iconName === "phone" && value) return `tel:${value.replace(/[^\d+]/g, "")}`;
+  return "";
 }
 
 function Field({
@@ -845,12 +861,22 @@ function Home() {
     }));
   }
 
+  function updateContactHref(contactId: string, href: string) {
+    setDocument((current) => ({
+      ...current,
+      person: {
+        ...current.person,
+        contacts: current.person.contacts.map((contact) => contact.id === contactId ? { ...contact, href } : contact),
+      },
+    }));
+  }
+
   function addContact() {
     setDocument((current) => ({
       ...current,
       person: {
         ...current.person,
-        contacts: [...current.person.contacts, { id: newId("contact"), label: { en: "Label", sv: "Etikett" }, value: { en: "", sv: "" }, icon: "auto" }],
+        contacts: [...current.person.contacts, { id: newId("contact"), label: { en: "Label", sv: "Etikett" }, value: { en: "", sv: "" }, icon: "auto", href: "" }],
       },
     }));
   }
@@ -1235,6 +1261,7 @@ function Home() {
                             <div className="contact-editor-main">
                               <Field label="Label" value={translated(contact.label, language)} onChange={(value) => updateContact(contact.id, "label", value)} />
                               <Field label="Value" value={translated(contact.value, language)} onChange={(value) => updateContact(contact.id, "value", value)} />
+                              <label className="field contact-link-field"><span>Link URL · shared across languages</span><input type="url" inputMode="url" value={contact.href} onChange={(event) => updateContactHref(contact.id, event.target.value)} placeholder="https://github.com/username" /></label>
                             </div>
                             <div className="contact-editor-footer">
                               <label className="field contact-icon-select"><span>Icon</span><select value={contact.icon} onChange={(event) => updateContactIcon(contact.id, event.target.value as ContactIconName)}>{contactIconOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
@@ -1278,13 +1305,21 @@ function Home() {
             <header className="resume-header">
               <p className="resume-headline">{translated(document.person.headline, language)}</p>
               <h2>{translated(document.person.name, language)}</h2>
-              <div className="resume-contacts">{document.person.contacts.filter((contact) => translated(contact.value, language).trim()).map((contact) => (
-                <span className="resume-contact" key={contact.id}>
-                  {showContactIcons && <span className="resume-contact-icon"><ContactGlyph contact={contact} language={language} /></span>}
-                  {showContactLabels && translated(contact.label, language) && <strong>{translated(contact.label, language)}:</strong>}
-                  <span className="resume-contact-value">{translated(contact.value, language)}</span>
-                </span>
-              ))}</div>
+              <div className="resume-contacts">{document.person.contacts.filter((contact) => translated(contact.value, language).trim()).map((contact) => {
+                const href = contactHref(contact, language);
+                const contactContent = (
+                  <>
+                    {showContactIcons && <span className="resume-contact-icon"><ContactGlyph contact={contact} language={language} /></span>}
+                    {showContactLabels && translated(contact.label, language) && <strong>{translated(contact.label, language)}:</strong>}
+                    <span className="resume-contact-value">{translated(contact.value, language)}</span>
+                  </>
+                );
+                return (
+                  <span className="resume-contact" key={contact.id}>
+                    {href ? <a className="resume-contact-link" href={href} target={href.startsWith("http") ? "_blank" : undefined} rel={href.startsWith("http") ? "noreferrer" : undefined}>{contactContent}</a> : contactContent}
+                  </span>
+                );
+              })}</div>
             </header>
             <div className="resume-body">{document.sections.map(renderPreviewSection)}</div>
           </article>
