@@ -56,27 +56,30 @@
     "items": [
       {
         "title": {
-          "en": "IT & Web Support for Family Business",
-          "sv": "IT och webbstöd för familjeföretag"
+          "en": "Web Development Project & Ad Hoc IT Support for Family Business",
+          "sv": "Webbutvecklingsprojekt och IT-support vid behov till familjeföretag"
         },
         "organization": "BBK International AB",
-        "years": "2023-2026",
         "meta": {
-          "en": "Informal, ongoing support · Paid project: company website",
-          "sv": "Informellt, löpande stöd · Betalt uppdrag: företagets webbplats"
+          "en": "Paid website project (2023) · Technical support as needed thereafter",
+          "sv": "Betalt webbplatsuppdrag (2023) · Därefter teknisk support vid behov"
         },
         "bullets": [
           {
-            "en": "Paid project: sole developer for the company website (bebeco.com), built with JavaScript and Next.js and migrated to a modern hosting environment.",
-            "sv": "Betalt uppdrag: ensam utvecklare av företagets webbplats (bebeco.com), byggd med JavaScript och Next.js och migrerad till en modern driftmiljö."
+            "en": "Designed, developed and deployed the company website (bebeco.com) using JavaScript and Next.js, then migrated it to Firebase.",
+            "sv": "Designade, utvecklade och driftsatte företagets webbplats (bebeco.com) med JavaScript och Next.js och migrerade den därefter till Firebase."
           },
           {
-            "en": "Ongoing informal support: selected, purchased, installed, configured and maintained computer and office hardware and software according to business needs.",
-            "sv": "Löpande informellt stöd: valde, köpte in, installerade, konfigurerade och underhöll dator och kontorsutrustning samt programvara utifrån verksamhetens behov."
+            "en": "Developed an industrial-door configuration and enquiry form that sends a formatted confirmation to the customer and a structured specification sheet to the business.",
+            "sv": "Utvecklade ett konfigurations och kontaktformulär för industriportar som skickar ett strukturerat specifikationsunderlag till företaget."
           },
           {
-            "en": "Diagnosed and resolved hardware, software, printer and network connectivity issues as needed.",
-            "sv": "Diagnostiserade och löste problem med hårdvara, programvara, skrivare och nätverksanslutningar vid behov."
+            "en": "Provide technical support as needed for email filters, DNS, network connectivity, printers, software and other day-to-day technical issues.",
+            "sv": "Ger teknisk support vid behov för e-postfilter, DNS, nätverksanslutning, skrivare, programvara och andra vardagliga tekniska problem."
+          },
+          {
+            "en": "Research, purchase, configure and maintain work computers, routers, printers and other equipment according to business needs.",
+            "sv": "Tar fram, köper in, konfigurerar och underhåller arbetsdatorer, routrar, skrivare och annan utrustning."
           }
         ]
       }
@@ -234,7 +237,7 @@
           "en": "Operating Systems",
           "sv": "Operativsystem"
         },
-        "value": "Linux, Windows, macOS"
+        "value": "Linux, Windows, macOS, Android, iOS"
       },
       {
         "label": {

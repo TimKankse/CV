@@ -1,40 +1,38 @@
-# Bilingual CV
+# Folio CV Studio
 
-All CV wording lives in [`cv.content.json`](./cv.content.json). The HTML files are generated outputs and should not be edited directly.
+Folio is a bilingual React CV editor built around clean, one-column documents. It starts with the content in `cv.content.json` and lets you edit, reorder and add sections while seeing an A4 preview.
 
-Each translatable value has an English (`en`) and Swedish (`sv`) version:
+## Features
 
-```json
-{
-  "heading": {
-    "en": "Experience",
-    "sv": "Arbetslivserfarenhet"
-  }
-}
+- English and Swedish editing
+- Device-local autosave
+- Reorderable experience, education, project, skills and custom sections
+- Modern, classic and minimal one-column templates
+- Preset themes plus custom typography, colors, spacing and margins
+- Print-quality PDF export through the browser
+- Responsive editing and preview modes
+
+## Run locally
+
+```sh
+npm install
+npm run dev
 ```
 
-Values that are identical in both languages, such as names and technology names, can remain plain strings.
+Open the local address shown in the terminal.
 
-## Generate the CVs
+## Build
 
 ```sh
 npm run build
 ```
 
-This creates:
+## Legacy static CV files
 
-- `CV.en.html` – English
-- `CV.sv.html` – Swedish
-- `CV.html` – a backwards-compatible copy of the English version
-
-## Regenerate whenever the content is saved
-
-Start the watcher while editing:
+The original generated HTML files remain in the repository. To regenerate them from `cv.content.json`, run:
 
 ```sh
-npm run watch
+npm run generate:legacy
 ```
 
-Every save to `cv.content.json` then regenerates both language versions. Stop the watcher with <kbd>Ctrl</kbd>+<kbd>C</kbd>.
-
-The generator uses only Node.js, so there are no packages to install.
+The web app imports `cv.content.json` as its initial document. Changes made in the browser are stored only on that device and do not overwrite the source JSON.
